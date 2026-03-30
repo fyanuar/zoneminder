@@ -1,14 +1,7 @@
-FROM debian:latest
+FROM debian:stable-slim
 WORKDIR /tmp
 COPY script .
 COPY cambozola.jar /usr/share/zoneminder/www/
-RUN apt-get update && apt-get dist-upgrade && apt-get -y install zoneminder &&\
- /etc/init.d/mariadb start &&\
- mysql -e "CREATE DATABASE zm;" &&\
- mysql -e "CREATE USER zmuser@localhost IDENTIFIED BY 'zmpass';" &&\
- mysql -e "GRANT ALL ON zm.* TO zmuser@localhost;" &&\
- mysql -e "FLUSH PRIVILEGES;" &&\
- mysql -uzmuser -pzmpass zm < /usr/share/zoneminder/db/zm_create.sql &&\
- usermod -a -G video www-data &&\
- apt-get clean
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get --no-install-recommends dist-upgrade && apt-get -y --no-install-recommends install zoneminder apache2 libapache2-mod-php ssl-cert ffmpeg
 ENTRYPOINT ["./setup.sh"]

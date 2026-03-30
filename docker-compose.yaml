@@ -1,0 +1,16 @@
+services:
+  zm:
+    image: zoneminder
+    build: .
+    devices:
+      - "/dev/video0:/dev/video0:rw"
+    ports:
+      - "5080:80"
+    environment:
+      - TZ=Asia/Jakarta
+      - DB_USER=bits_user
+      - DB_PASS=bits_pass
+    shm_size: "8GB"
+    volumes:
+      - /srv/zoneminder/config:/srv/config
+      - /srv/zoneminder/data:/srv/data
