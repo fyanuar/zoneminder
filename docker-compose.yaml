@@ -2,15 +2,18 @@ services:
   zm:
     image: zoneminder
     build: .
-    devices:
-      - "/dev/video0:/dev/video0:rw"
+#    devices:
+#      - "/dev/video0:/dev/video0:rw"
+    shm_size: "2GB"
+#    network_mode: host
     ports:
-      - "5080:80"
+      - "80:80"
+      - "9000:9000"
     environment:
       - TZ=Asia/Jakarta
-      - DB_USER=bits_user
-      - DB_PASS=bits_pass
-    shm_size: "8GB"
+      - DB_USER=zmuser
+      - DB_PASS=zmpass
+      - INSTALL_ZMES=1
     volumes:
       - /srv/zoneminder/config:/srv/config
       - /srv/zoneminder/data:/srv/data

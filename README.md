@@ -1,47 +1,71 @@
-## Environments ##
-<<!--@include:./environments-->
+### Environments ###
 
-## Volumes ##
+See this [environments](environments.md).
+
+### Volumes ###
+
 The default configuration and data files are located in /srv/config and /srv/data. You can attach volumes to either folder.
+
 Example:
+
 ```
 -v /srv/zoneminder/data:/srv/data
 -v /srv/zoneminder/config:/srv/config
 ```
 
+### Build with docker command ###
+
+```bash
+docker build -t zoneminder .
+```
+
 ### Running with docker command ###
+
 ```bash
 docker run -d --rm --name="zoneminder" \
 --device="/dev/video0:/dev/video0":rw \
---shm-size="8G" \
+--shm-size="2G" \
 -v "/srv/zoneminder/config":"/srv/config":rw \
 -v "/srv/zoneminder/data":"/srv/data":rw \
 -e TZ="Asia/Jakarta" \
 -e DB_USER="bits_user" \
 -e DB_PASS="bits_pass" \
--p 5080:80 \
+-e INSTALL_ZMES="true" \
+-e INSTALL_HOOK="yes" \
+-e INSTALL_MODEL=1 \
+-p 80:80 \
+-p 9000:9000 \
 zoneminder
 ```
 
-### Running with docker-compose ###
+### Build and Run with docker-compose ###
+
 Create docker-compose.yaml.
+
 ```yaml
 services:
   zm:
     image: zoneminder
     build: .
     ports:
-      - "5080:80"
+      - "80:80"
+      - "9000:9000"
     environment:
       - TZ=Asia/Jakarta
-      - DB_USER=bits_user
-      - DB_PASS=bits_pass
-    shm_size: "8GB"
+      - DB_USER=zmuser
+      - DB_PASS=zmpass
+      - INSTALL_ZMES="true"
+      - INSTALL_HOOK="yes"
+      - INSTALL-MODEL=1
+    shm_size: "2GB"
     volumes:
       - /srv/zoneminder/config:/srv/config
       - /srv/zoneminder/data:/srv/data
 ```
+
 Run this docker-compose with command:
+
 ```bash
 docker compose up
 ```
+

@@ -34,30 +34,66 @@ if [[ ! ${INSTALL_DB,,} =~ ^(false|off|no|0)$ ]]; then
   /etc/init.d/mariadb start
   [ -n "$DB_USER" ] || DB_USER="zmuser"
   [ -n "$DB_PASS" ] || DB_PASS="zmpass"
-  mysql -e "CREATE DATABASE IF NOT EXISTS zm"
+  [ -n "$DB_NAME" ] || DB_NAME="zm"
+  mysql -e "CREATE DATABASE IF NOT EXISTS $DB_NAME"
   mysql -e "CREATE USER IF NOT EXISTS $DB_USER@localhost IDENTIFIED BY \"$DB_PASS\""
   mysql -e "GRANT ALL ON zm.* TO $DB_USER@localhost;"
   mysql -e "FLUSH PRIVILEGES"
 
-  TABLE_COUNT=$(mysql -u"$DB_USER" -p"$DB_PASS" -D zm -e "SHOW TABLES;" | wc -l)
+  TABLE_COUNT=$(mysql -u"$DB_USER" -p"$DB_PASS" -D "$DB_NAME" -e "SHOW TABLES;" | wc -l)
 
   if [ "$TABLE_COUNT" -le 1 ]; then
       echo "Mengimpor skema database ZoneMinder..."
-      mysql -u"$DB_USER" -p"$DB_PASS" zm < /usr/share/zoneminder/db/zm_create.sql
+      mysql -u"$DB_USER" -p"$DB_PASS" "$DB_NAME" < /usr/share/zoneminder/db/zm_create.sql
   else
       echo "Database 'zm' sudah terisi, melewati tahap impor."
   fi
-
 #
 # Jika di remote, atur konfigurasi database di zm.conf
 else
   echo "Make sure the database on $DB_HOST has its credentials and privileges configured correctly."
-  sleep 3
-  mysql -h$DB_HOST -u$DB_USER -p$DB_PASS $DB_NAME < /usr/share/zoneminder/db/zm_create.sql
+  sleep 5
+
+  TABLE_COUNT=$(mysql -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASS" -D "$DB_NAME" -e "SHOW TABLES;" | wc -l)
+
+  if [ "$TABLE_COUNT" -le 1 ]; then
+      echo "Mengimpor skema database ZoneMinder..."
+      mysql -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASS" "$DB_NAME" < /usr/share/zoneminder/db/zm_create.sql
+  else
+      echo "Database 'zm' sudah terisi, melewati tahap impor."
+  fi
+
+#  mysql -h$DB_HOST -u$DB_USER -p$DB_PASS $DB_NAME < /usr/share/zoneminder/db/zm_create.sql
   sed -i "s|ZM_DB_HOST=localhost|ZM_DB_HOST=$DB_HOST|" /etc/zm/zm.conf
 fi
 
-# Letakkan konfigurasi zoneminder di /srv/config
+
+# Install zmeventnotification?
+if [[ ${INSTALL_ZMES,,} =~ ^(true|on|yes|1)$ ]]; then
+  apt-get -y --no-install-recommends install libprotocol-websocket-perl libjson-xs-perl
+  cp -a /opt/zmeventnotification/{usr,etc} /opt/perl/* /
+  mkdir -p /var/lib/zmeventnotification/push
+  chown -R www-data:www-data /var/lib/zmeventnotification
+  if [[ ${INSTALL_HOOK,,} =~ ^(true|on|yes|1)$ ]]; then
+    apt-get -y --no-install-recommends install python3-opencv python3-requests python3-psutil python3-dotenv python3-sklearn
+    if [[ ${INSTALL_MODEL,,} =~ ^(true|on|yes|1)$ ]]; then
+      cp -a /opt/zmeventnotification/var/lib/zmeventnotification/models /var/lib/zmeventnotification/
+    fi
+    cp -a /opt/zmeventnotification/var/lib/zmeventnotification/{bin,contrib} /var/lib/zmeventnotification/
+    cp -a /opt/zmes_hook_helpers/* /
+  fi
+# Letakkan /var/lib/zmeventnotification di /srv/data
+  if [ -d /srv/data/zmeventnotification ]; then
+    rm -rf /var/lib/zmeventnotification
+    ln -s /srv/data/zmeventnotification /var/lib/zmeventnotification
+  else
+    mv /var/lib/zmeventnotification /srv/data/
+    ln -s /srv/data/zmeventnotification /var/lib/zmeventnotification
+  fi
+  rm -rf /opt/zmeventnotification /opt/perl
+fi
+
+# Pindahkan konfigurasi zoneminder ke /srv/config
 if [ -d /srv/config/zm ]; then
   rm -rf /etc/zm
   ln -s /srv/config/zm /etc/
@@ -91,6 +127,7 @@ if [ -n "$ZM_SERVER_HOST" ]; then
 fi
 
 chgrp -c www-data /etc/zm/zm.conf
+chown -R www-data:www-data /var/lib/zmeventnotification
 
 # mengaktifkan url API
 sed -i '28,$ d' /etc/apache2/conf-available/zoneminder.conf
