@@ -1,7 +1,7 @@
 #!/bin/bash
 
 apt-get update && apt-get -y install wget git sudo
-apt-get -y install make libprotocol-websocket-perl libyaml-perl python3-requests python3-shapely python3-dateparser python3-imageio python3-imageio-ffmpeg python3-joblib python3-pil python3-portalocker python3-progressbar2 python3-psutil python3-dateutil python3-dotenv python3-python-utils python3-pytz python3-regex python3-sklearn python3-scipy python3-six python3-threadpoolctl python3-typing-extensions python3-tzlocal python3-websocket python3-click
+apt-get -y install make libprotocol-websocket-perl libyaml-perl python3-requests python3-shapely python3-dateparser python3-imageio python3-imageio-ffmpeg python3-joblib python3-pil python3-portalocker python3-progressbar2 python3-psutil python3-dateutil python3-dotenv python3-python-utils python3-pytz python3-regex python3-sklearn python3-scipy python3-six python3-threadpoolctl python3-typing-extensions python3-tzlocal python3-websocket python3-click libopenblas-dev liblapack-dev libblas-dev
 
 git clone https://github.com/ZoneMinder/zmeventnotification.git
 cd zmeventnotification
@@ -18,6 +18,7 @@ pip install --root=/opt/imutils imutils
 pip install --root=/opt/pyzm "pyzm<0.4.0"
 pip install --root=/opt/zmes_hook_helpers hook/
 pip install --root=/opt/face_recognition --no-warn-script-location --root-user-action=ignore face_recognition
+pip install --root=/opt/face_recognition_models git+https://github.com/ageitgey/face_recognition_models
 
 # Install Net::WebSocket::Server
 PERL_MM_OPT="DESTDIR=/opt/perl" cpan Net::WebSocket::Server

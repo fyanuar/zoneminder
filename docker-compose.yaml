@@ -1,11 +1,11 @@
 services:
-  zm:
+  zoneminder:
+    container_name: zoneminder
     image: zoneminder
-    build: .
 #    devices:
 #      - "/dev/video0:/dev/video0:rw"
-    shm_size: "2GB"
 #    network_mode: host
+    shm_size: "2GB"
     ports:
       - "80:80"
       - "9000:9000"
@@ -14,6 +14,8 @@ services:
       - DB_USER=zmuser
       - DB_PASS=zmpass
       - INSTALL_ZMES=1
+      - INSTALL_HOOK=1
+      - INSTALL_MODEL=1
     volumes:
-      - /srv/zoneminder/config:/srv/config
-      - /srv/zoneminder/data:/srv/data
+      - /srv/zoneminder/config:/srv/config:rw
+      - /srv/zoneminder/data:/srv/data:rw

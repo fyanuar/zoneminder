@@ -12,7 +12,7 @@ fi
 # MySQL di local atau remote?
 # Jika di local, install mariadb-server
 if [[ ! ${INSTALL_DB,,} =~ ^(false|off|no|0)$ ]]; then
-  apt-get -y --no-install-recommends install mariadb-server
+  apt-get -qq --no-install-recommends install mariadb-server
 # Letakkan konfigurasi mysql di /srv/config
   if [ -d /srv/config/mysql ]; then
     rm -rf /etc/mysql
@@ -71,26 +71,35 @@ fi
 # Install zmeventnotification?
 if [[ ${INSTALL_ZMES,,} =~ ^(true|on|yes|1)$ ]]; then
   apt-get -y --no-install-recommends install libprotocol-websocket-perl libjson-xs-perl
-  cp -a /opt/zmeventnotification/{usr,etc} /opt/perl/* /
   mkdir -p /var/lib/zmeventnotification/push
+  cp -a /opt/zmeventnotification/usr /opt/perl/* /
+  cp -a /opt/zmeventnotification/etc/zm/{zmeventnotification.ini,secrets.ini,es_rules.json} /etc/zm/
   chown -R www-data:www-data /var/lib/zmeventnotification
   if [[ ${INSTALL_HOOK,,} =~ ^(true|on|yes|1)$ ]]; then
-    apt-get -y --no-install-recommends install python3-opencv python3-requests python3-psutil python3-dotenv python3-sklearn
+    apt-get -y --no-install-recommends install python3-opencv gifsicle python3-requests python3-psutil python3-dotenv python3-sklearn
+    cp -a /opt/zmeventnotification/etc/objectconfig.ini /etc/zm/
+    mkdir -p /var/lib/zmeventnotification/{contrib,images,mlapi,known_faces,unknown_faces,models/yolov3,models/tinyyolov3,models/tinyyolov4,models/yolov4,models/coral_edgetpu,misc}
     if [[ ${INSTALL_MODEL,,} =~ ^(true|on|yes|1)$ ]]; then
+      apt-get -y --no-install-recommends install python3-imageio python3-imageio-ffmpeg python3-shapely python3-progressbar python3-dateparser python3-portalocker libopenblas0-pthread python3-click python3-setuptools
       cp -a /opt/zmeventnotification/var/lib/zmeventnotification/models /var/lib/zmeventnotification/
+      cp -a /opt/face_recognition_models/* /
     fi
     cp -a /opt/zmeventnotification/var/lib/zmeventnotification/{bin,contrib} /var/lib/zmeventnotification/
-    cp -a /opt/zmes_hook_helpers/* /
+    cp -a /opt/{zmes_hook_helpers,face_recognition}/* /
   fi
 # Letakkan /var/lib/zmeventnotification di /srv/data
   if [ -d /srv/data/zmeventnotification ]; then
+    cp -a /var/lib/zmeventnotification /srv/data/
+    cp -a --backup="numbered"  /etc/zm/{zmeventnotification.ini,secrets.ini,objectconfig.ini,es_rules.json} /srv/config/zm/
     rm -rf /var/lib/zmeventnotification
     ln -s /srv/data/zmeventnotification /var/lib/zmeventnotification
   else
     mv /var/lib/zmeventnotification /srv/data/
     ln -s /srv/data/zmeventnotification /var/lib/zmeventnotification
   fi
-  rm -rf /opt/zmeventnotification /opt/perl
+  rm -rf /opt/*
+else
+  mysql -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASS" "$DB_NAME" -e "UPDATE Config SET Value=0 WHERE Name='ZM_OPT_USE_EVENTNOTIFICATION'"
 fi
 
 # Pindahkan konfigurasi zoneminder ke /srv/config
